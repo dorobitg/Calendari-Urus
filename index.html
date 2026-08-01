@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendari Urús</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100vh;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#e8e0d0}
+body{display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1rem 3rem}
+#app{width:100%;max-width:1020px;position:relative}
+.header-wrap{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.flor-img{width:56px;height:72px;object-fit:contain;flex-shrink:0}
+.atitle{color:#3a2e1e;font-size:30px;font-weight:700;letter-spacing:.04em;flex:1;text-align:center;padding-right:68px}
+.sync-bar{text-align:center;font-size:11px;min-height:20px;margin-bottom:.8rem;letter-spacing:.03em}
+.sync-bar.ok{color:#5a8a4a}
+.sync-bar.loading{color:#a07020}
+.sync-bar.err{color:#b04030}
+.legend{display:flex;justify-content:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap}
+.lu{display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 14px;border-radius:20px;border:1.5px solid transparent;transition:all .15s;font-size:13px;font-weight:500;user-select:none;background:rgba(0,0,0,.05)}
+.lu.active{border-color:rgba(0,0,0,.25);background:rgba(0,0,0,.1)}
+.lu:not(.active){opacity:.45}
+.ldot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
+.main-layout{display:flex;gap:14px;align-items:flex-start}
+.cals-col{flex:1;min-width:0}
+.cals-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.calbox{background:#d6cab4;border:.5px solid rgba(0,0,0,.12);border-radius:14px;padding:.85rem}
+.calh{display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem}
+.calnav{background:none;border:.5px solid rgba(0,0,0,.18);color:#5a4a30;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:background .15s;line-height:1}
+.calnav:hover{background:rgba(0,0,0,.1)}
+.calmon{color:#3a2e1e;font-size:13px;font-weight:600;text-align:center;flex:1}
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cdow{text-align:center;font-size:9px;color:#7a6a52;font-weight:600;padding:2px 0 5px;letter-spacing:.02em}
+.cday{aspect-ratio:1;border-radius:6px;border:.5px solid rgba(0,0,0,.07);background:rgba(255,255,255,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .12s,transform .1s;overflow:hidden;padding:2px;position:relative}
+.cday:hover{background:rgba(255,255,255,.65);transform:scale(1.05)}
+.cday.empty{cursor:default;background:transparent;border-color:transparent}
+.cday.empty:hover{background:transparent;transform:none}
+.cday.today{border-color:rgba(80,100,160,.5)!important;box-shadow:inset 0 0 0 1px rgba(80,100,160,.15)}
+.cday.festiu{background:rgba(200,130,40,.18);border-color:rgba(180,110,20,.35)}
+.cday.aniv{background:rgba(140,60,180,.14);border-color:rgba(130,50,170,.3)}
+.cday.festiu.aniv{background:rgba(180,80,80,.15)}
+.cday.has-users{background:rgba(255,255,255,.55)}
+.dnum{font-size:11px;color:#3a2e1e;font-weight:400;line-height:1;margin-bottom:1px}
+.cday.festiu .dnum{color:#7a4010;font-weight:600}
+.cday.aniv .dnum{color:#6a2a9a;font-weight:600}
+.ddots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center}
+.udot{width:13px;height:13px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:#fff;flex-shrink:0;transition:opacity .2s}
+.udot.pending{opacity:0.32;outline:1.5px dashed #888;outline-offset:1px}
+.fbar{font-size:6.5px;color:#7a4010;line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;width:100%;font-weight:500}
+.abar{font-size:6.5px;color:#6a2a9a;line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;width:100%;font-weight:500}
+.tooltip{position:fixed;background:#3a2e1e;color:#f0e8d8;font-size:11px;padding:5px 9px;border-radius:7px;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999;max-width:200px;text-align:center;line-height:1.5;white-space:pre-line}
+.side-col{width:180px;flex-shrink:0}
+.side-card{background:#d6cab4;border:.5px solid rgba(0,0,0,.12);border-radius:14px;padding:.9rem;margin-bottom:12px}
+.side-title{font-size:10px;color:#7a6a52;font-weight:700;letter-spacing:.07em;margin-bottom:.55rem;border-bottom:.5px solid rgba(0,0,0,.1);padding-bottom:4px;text-transform:uppercase}
+.modebar{display:flex;gap:6px;margin-bottom:.6rem}
+.btn{background:rgba(0,0,0,.07);border:.5px solid rgba(0,0,0,.15);color:#3a2e1e;border-radius:8px;padding:5px 0;font-size:12px;cursor:pointer;transition:background .15s;font-family:inherit;flex:1;text-align:center}
+.btn:hover{background:rgba(0,0,0,.14)}
+.btn.active-mode{background:rgba(0,0,0,.14);border-color:rgba(0,0,0,.3);font-weight:600}
+.btn-full{width:100%;background:rgba(180,60,40,.1);border:.5px solid rgba(180,60,40,.3);color:#902010;border-radius:8px;padding:5px 0;font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:.5rem;transition:background .15s}
+.btn-full:hover{background:rgba(180,60,40,.2)}
+.btn-validate{width:100%;background:rgba(22,163,74,.12);border:.5px solid rgba(22,163,74,.4);color:#0a7a30;border-radius:8px;padding:6px 0;font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:.5rem;transition:background .15s;font-weight:600}
+.btn-validate:hover{background:rgba(22,163,74,.22)}
+.statusbar{text-align:center;font-size:11px;color:#5a7a4a;min-height:24px;line-height:1.5}
+.save-indicator{text-align:center;font-size:10px;color:#5a8a4a;min-height:14px;margin-top:3px;letter-spacing:.02em;transition:opacity .4s}
+.save-indicator.hidden{opacity:0}
+.divider{border-top:.5px solid rgba(0,0,0,.1);margin:.6rem 0}
+.urow{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.urow:last-child{margin-bottom:0}
+.uavt{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.uinfo{flex:1;min-width:0}
+.uname{font-size:12px;color:#3a2e1e;font-weight:500}
+.ucount{font-size:22px;font-weight:600;line-height:1.1}
+.ulabel{font-size:9px;color:#9a8a72}
+.legend-box{background:#d6cab4;border:.5px solid rgba(0,0,0,.1);border-radius:12px;padding:.75rem;margin-bottom:12px}
+.leg-head{font-size:9px;color:#7a6a52;letter-spacing:.06em;margin-bottom:5px;font-weight:700;text-transform:uppercase}
+.leg-item{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:11px;color:#4a3a28}
+.leg-item:last-child{margin-bottom:0}
+.leg-sq{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.mini-dot{width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:#fff;flex-shrink:0}
+.pending-demo{width:14px;height:14px;border-radius:50%;background:#888;opacity:.35;outline:1.5px dashed #888;outline-offset:1px;flex-shrink:0}
+.history-box{background:#d6cab4;border:.5px solid rgba(0,0,0,.1);border-radius:12px;padding:.75rem}
+.history-list{list-style:none;margin-top:4px}
+.history-list li{font-size:10px;color:#5a4a32;padding:3px 0;border-bottom:.5px solid rgba(0,0,0,.07);line-height:1.4}
+.history-list li:last-child{border-bottom:none}
+.history-list .htime{color:#9a8a72;font-size:9px;display:block}
+
+/* ── Secció DOGC ── */
+.dogc-section{margin-top:1.4rem;background:#d6cab4;border:.5px solid rgba(0,0,0,.12);border-radius:14px;padding:1rem 1.2rem}
+.dogc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;flex-wrap:gap}
+.dogc-title{font-size:13px;font-weight:700;color:#3a2e1e;letter-spacing:.03em;display:flex;align-items:center;gap:8px}
+.dogc-badge{background:#c8112a;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.04em}
+.dogc-subtitle{font-size:11px;color:#7a6a52;margin-top:2px}
+.dogc-btn{display:inline-flex;align-items:center;gap:6px;background:#3a2e1e;color:#f0e8d8;border:none;border-radius:8px;padding:6px 13px;font-size:11px;font-weight:600;cursor:pointer;text-decoration:none;transition:background .15s;white-space:nowrap;font-family:inherit}
+.dogc-btn:hover{background:#5a4a32}
+.dogc-btn svg{flex-shrink:0}
+.dogc-entries{margin-top:.7rem}
+.dogc-entry{display:flex;gap:10px;padding:8px 0;border-bottom:.5px solid rgba(0,0,0,.08);align-items:flex-start}
+.dogc-entry:last-child{border-bottom:none}
+.dogc-date-badge{background:rgba(0,0,0,.08);color:#5a4a32;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0;margin-top:1px;letter-spacing:.02em}
+.dogc-entry-content{flex:1;min-width:0}
+.dogc-entry-title{font-size:11px;font-weight:600;color:#3a2e1e;line-height:1.4;margin-bottom:2px}
+.dogc-entry-desc{font-size:10px;color:#7a6a52;line-height:1.4}
+.dogc-entry-link{font-size:10px;color:#5a4a32;text-decoration:underline;cursor:pointer}
+.dogc-note{font-size:10px;color:#9a8a72;font-style:italic;margin-top:.7rem;text-align:center}
+
+.footer{text-align:center;margin-top:2rem;font-size:11px;font-style:italic;color:#9a8a72}
+@media(max-width:700px){
+  .main-layout{flex-direction:column}
+  .side-col{width:100%}
+  .cals-grid{grid-template-columns:1fr}
+  body{padding:.8rem .5rem 2rem}
+  .atitle{font-size:22px;padding-right:0}
+  .header-wrap{justify-content:center}
+  .dogc-header{flex-direction:column;gap:8px;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="tooltip" id="tooltip"></div>
+
+  <div class="header-wrap">
+    <img src="flor.png" alt="Flor d'Urús" class="flor-img">
+    <h1 class="atitle">Calendari Urús</h1>
+  </div>
+
+  <div class="sync-bar loading" id="sync-bar">&#9679; Connectant...</div>
+
+  <div class="legend">
+    <div class="lu active" id="btn-N" onclick="selectUser('N')" style="color:#5a1aad">
+      <div class="ldot" style="background:#7c3aed">N</div>Noelia
+    </div>
+    <div class="lu" id="btn-T" onclick="selectUser('T')" style="color:#0a7a30">
+      <div class="ldot" style="background:#16a34a">T</div>Teresa
+    </div>
+    <div class="lu" id="btn-D" onclick="selectUser('D')" style="color:#0a3aab">
+      <div class="ldot" style="background:#2563eb">D</div>Daniel
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <div class="cals-col">
+      <div class="cals-grid" id="cals-grid"></div>
+    </div>
+    <div class="side-col">
+      <div class="side-card">
+        <div class="side-title">Mode d'edició</div>
+        <div class="modebar">
+          <button class="btn active-mode" id="mode-add" onclick="setMode('add')">+ Afegir</button>
+          <button class="btn" id="mode-remove" onclick="setMode('remove')">− Treure</button>
+        </div>
+        <button class="btn-full" onclick="clearUser()">Esborrar tot</button>
+        <button class="btn-validate" id="btn-validate" onclick="validatePending()" style="display:none">&#10003; Validat per Teresa</button>
+        <div class="statusbar" id="statusbar"></div>
+        <div class="save-indicator hidden" id="save-indicator">&#10003; Desat al núvol</div>
+        <div class="divider"></div>
+        <div class="side-title">Recompte de dies</div>
+        <div class="urow">
+          <div class="uavt" style="background:#7c3aed">N</div>
+          <div class="uinfo"><div class="uname">Noelia</div><div class="ucount" id="cnt-N" style="color:#7c3aed">0</div><div class="ulabel">dies reservats</div></div>
+        </div>
+        <div class="urow">
+          <div class="uavt" style="background:#16a34a">T</div>
+          <div class="uinfo"><div class="uname">Teresa</div><div class="ucount" id="cnt-T" style="color:#16a34a">0</div><div class="ulabel">dies reservats</div></div>
+        </div>
+        <div class="urow">
+          <div class="uavt" style="background:#2563eb">D</div>
+          <div class="uinfo"><div class="uname">Daniel</div><div class="ucount" id="cnt-D" style="color:#2563eb">0</div><div class="ulabel">dies reservats</div></div>
+        </div>
+      </div>
+
+      <div class="legend-box">
+        <div class="leg-head">Llegenda</div>
+        <div class="leg-item"><div class="leg-sq" style="background:rgba(200,130,40,.5);border:.5px solid rgba(180,110,20,.5)"></div>Festiu / Festa Major</div>
+        <div class="leg-item"><div class="leg-sq" style="background:rgba(140,60,180,.4);border:.5px solid rgba(130,50,170,.5)"></div>Aniversari</div>
+        <div class="leg-item"><div class="mini-dot" style="background:#7c3aed">N</div>Noelia</div>
+        <div class="leg-item"><div class="mini-dot" style="background:#16a34a">T</div>Teresa</div>
+        <div class="leg-item"><div class="mini-dot" style="background:#2563eb">D</div>Daniel</div>
+        <div class="leg-item"><div class="pending-demo"></div>Pendent validació</div>
+      </div>
+
+      <div class="history-box" style="margin-top:12px">
+        <div class="leg-head">Darrers canvis</div>
+        <ul class="history-list" id="history-list">
+          <li style="color:#9a8a72;font-size:10px">Sense canvis recents</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Secció DOGC ── -->
+  <!-- ── Secció DOGC ── -->
+  <div class="dogc-section">
+    <div class="dogc-header">
+      <div>
+        <div class="dogc-title">
+          <span class="dogc-badge">DOGC</span>
+          Urús al Diari Oficial de la Generalitat
+        </div>
+        <div class="dogc-subtitle">Publicacions oficials que mencionen Urús · des del 2024</div>
+      </div>
+      <a class="dogc-btn" href="https://dogc.gencat.cat/ca/inici/resultats/" target="_blank" rel="noopener">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        Cercar al DOGC
+      </a>
+    </div>
+    <div class="dogc-entries">
+      <div class="dogc-entry">
+        <span class="dogc-date-badge">31 des 2024</span>
+        <div class="dogc-entry-content">
+          <div class="dogc-entry-title">Ordre EMT/262/2024 · Festes locals 2025</div>
+          <div class="dogc-entry-desc">DOGC núm. 9320. Urús: <strong>16 d'agost</strong> i <strong>21 de novembre</strong> com a festes locals per a l'any 2025.</div>
+          <a class="dogc-entry-link" href="https://dogc.gencat.cat/ca/pdogc_canals_interns/pdogc_resultats_fitxa/?action=fitxa&documentId=1003483" target="_blank" rel="noopener">Veure document ↗</a>
+        </div>
+      </div>
+      <div class="dogc-entry">
+        <span class="dogc-date-badge">17 des 2025</span>
+        <div class="dogc-entry-content">
+          <div class="dogc-entry-title">Ordre EMT/208/2025 · Festes locals 2026</div>
+          <div class="dogc-entry-desc">DOGC núm. 9565. Urús: <strong>14 d'agost</strong> i <strong>23 de novembre</strong> com a festes locals per a l'any 2026.</div>
+          <a class="dogc-entry-link" href="https://dogc.gencat.cat/ca/pdogc_canals_interns/pdogc_resultats_fitxa/?action=fitxa&documentId=1007562" target="_blank" rel="noopener">Veure document ↗</a>
+        </div>
+      </div>
+    </div>
+    <div class="dogc-note">Per veure totes les publicacions, clica "Cercar al DOGC", escriu <strong>Urús</strong> al camp de cerca i filtra des de l'1/01/2024.</div>
+  </div>
+
+  <div class="footer">Desenvolupat per DOR amb l'ajut d'Anthropic</div>
+</div>
+
+<script>
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const USERS = {
+  N:{name:'Noelia',color:'#7c3aed',light:'#5a1aad'},
+  T:{name:'Teresa',color:'#16a34a',light:'#0a7a30'},
+  D:{name:'Daniel',color:'#2563eb',light:'#0a3aab'}
+};
+
+const FESTIUS = {
+  '01-01':"Cap d'Any",'01-06':'Reis',
+  '04-03':'Divendres Sant','04-06':'Pasqua Florida',
+  '05-01':'Dia del Treball','06-24':'Sant Joan',
+  '08-14':'Festa Major Urús','08-15':'Festa Major Urús',
+  '08-16':'Festa Major Urús','08-17':'Festa Major Urús',
+  '09-11':'Diada de Catalunya','10-12':'Festa Nacional',
+  '12-08':'La Immaculada','12-25':'Nadal','12-26':'Sant Esteve'
+};
+
+const ANIVS = {
+  '06-09':'Aniversari Teresa','03-13':'Aniversari Daniel',
+  '09-21':'Aniversari Noelia','08-15':'Aniversari Genís',
+  '09-04':'Aniversari Àlex','06-22':'Aniversari Júlia',
+  '11-16':'Aniversari Gina','11-13':'Aniversari Blanca'
+};
+
+const MONTHS = ['Gener','Febrer','Març','Abril','Maig','Juny','Juliol','Agost','Setembre','Octubre','Novembre','Desembre'];
+const MONTHS_SHORT = ['gen','feb','mar','abr','mai','jun','jul','ago','set','oct','nov','des'];
+
+function mmdd(m,d){return String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
+function bKey(y,m,d){return y+'-'+mmdd(m,d)}
+
+function normalizeUsers(raw){
+  if(!raw) return [];
+  if(Array.isArray(raw)) return raw.filter(x=>typeof x==='string'&&x.length>0);
+  if(typeof raw==='string'){
+    const c=raw.replace(/^\{|\}$/g,'');
+    return c.split(',').map(s=>s.trim().replace(/^"|"$/g,'')).filter(s=>s.length>0);
+  }
+  return [];
+}
+
+let bookings={}, currentUser='N', mode='add';
+const today=new Date();
+let startMonth=today.getMonth(), startYear=today.getFullYear();
+let saveTimer=null, history=[];
+
+function setSyncBar(state,text){
+  const el=document.getElementById('sync-bar');
+  el.className='sync-bar '+state;
+  el.innerHTML='&#9679; '+text;
+}
+function showSaveIndicator(){
+  const el=document.getElementById('save-indicator');
+  el.classList.remove('hidden');
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>el.classList.add('hidden'),2500);
+}
+function selectUser(u){
+  currentUser=u;
+  ['N','T','D'].forEach(x=>document.getElementById('btn-'+x).classList.toggle('active',x===u));
+  document.getElementById('btn-validate').style.display=(u==='T')?'block':'none';
+  updateStatus();
+}
+function setMode(m){
+  mode=m;
+  document.getElementById('mode-add').className='btn'+(m==='add'?' active-mode':'');
+  document.getElementById('mode-remove').className='btn'+(m==='remove'?' active-mode':'');
+  updateStatus();
+}
+function updateStatus(){
+  const u=USERS[currentUser];
+  const mt=mode==='add'?'afegir':'treure';
+  let extra='';
+  if(currentUser==='T'){
+    const pending=Object.values(bookings).filter(b=>!b.validated&&b.users.some(x=>x!=='T')).length;
+    if(pending>0) extra='<br><span style="color:#a07020;font-size:10px">'+pending+' dia'+(pending>1?'es':'')+' pendent'+(pending>1?'s':'')+'</span>';
+  }
+  document.getElementById('statusbar').innerHTML=
+    'Clica dies per <strong>'+mt+'</strong><br>'+
+    '<strong style="color:'+u.light+'">'+u.name+'</strong>'+extra;
+}
+function updateCounts(){
+  ['N','T','D'].forEach(u=>{
+    document.getElementById('cnt-'+u).textContent=
+      Object.values(bookings).filter(b=>b.users.includes(u)).length;
+  });
+}
+function addHistory(text){
+  const now=new Date();
+  const ts=now.getDate()+'/'+(now.getMonth()+1)+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  history.unshift({text,ts});
+  if(history.length>10) history.pop();
+  const ul=document.getElementById('history-list');
+  ul.innerHTML=history.map(h=>'<li><span class="htime">'+h.ts+'</span>'+h.text+'</li>').join('');
+}
+
+const tooltipEl=document.getElementById('tooltip');
+function showTooltip(e,text){tooltipEl.textContent=text;tooltipEl.style.opacity='1';moveTooltip(e)}
+function moveTooltip(e){tooltipEl.style.left=(e.clientX+12)+'px';tooltipEl.style.top=(e.clientY-32)+'px'}
+function hideTooltip(){tooltipEl.style.opacity='0'}
+
+async function loadAll(){
+  setSyncBar('loading','Carregant dades...');
+  try{
+    const{data,error}=await sb.from('bookings').select('day_key,users,validated');
+    if(error) throw error;
+    bookings={};
+    (data||[]).forEach(row=>{
+      const users=normalizeUsers(row.users);
+      if(users.length>0) bookings[row.day_key]={users,validated:!!row.validated};
+    });
+    setSyncBar('ok','Connectat · dades en temps real');
+    renderAll();updateCounts();updateStatus();
+  }catch(e){
+    console.error(e);
+    setSyncBar('err','Error de connexió');
+  }
+}
+
+async function saveDay(key,users,validated){
+  try{
+    if(users.length===0){
+      const{error}=await sb.from('bookings').delete().eq('day_key',key);
+      if(error) throw error;
+    }else{
+      const{error}=await sb.from('bookings')
+        .upsert({day_key:key,users,validated:!!validated},{onConflict:'day_key'});
+      if(error) throw error;
+    }
+    showSaveIndicator();
+  }catch(e){
+    console.error(e);
+    setSyncBar('err','Error desant dades');
+    setTimeout(()=>setSyncBar('ok','Connectat · dades en temps real'),3000);
+  }
+}
+
+function subscribeRealtime(){
+  sb.channel('bookings-rt-v4')
+    .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},payload=>{
+      const{eventType,new:nr,old:or}=payload;
+      if(eventType==='DELETE'){delete bookings[or.day_key];}
+      else if(nr){
+        const users=normalizeUsers(nr.users);
+        if(users.length>0) bookings[nr.day_key]={users,validated:!!nr.validated};
+        else delete bookings[nr.day_key];
+      }
+      renderAll();updateCounts();updateStatus();
+    })
+    .subscribe(status=>{
+      if(status==='SUBSCRIBED')    setSyncBar('ok','Connectat · dades en temps real');
+      if(status==='CHANNEL_ERROR') setSyncBar('err','Error de connexió');
+      if(status==='CLOSED')        setSyncBar('err','Connexió tancada');
+    });
+}
+
+async function validatePending(){
+  const keys=Object.keys(bookings).filter(k=>!bookings[k].validated&&bookings[k].users.length>0);
+  if(keys.length===0) return;
+  for(const k of keys){
+    bookings[k].validated=true;
+    await saveDay(k,bookings[k].users,true);
+  }
+  addHistory('Teresa ha validat '+keys.length+' dia'+(keys.length>1?'es':''));
+  renderAll();updateCounts();updateStatus();
+}
+
+async function toggleDay(y,m,d){
+  const k=bKey(y,m,d);
+  const entry=bookings[k]||{users:[],validated:false};
+  const idx=entry.users.indexOf(currentUser);
+  if(mode==='add'){
+    if(idx===-1){
+      entry.users.push(currentUser);
+      entry.validated=(currentUser==='T')?true:false;
+    }
+  }else{
+    if(idx!==-1) entry.users.splice(idx,1);
+    if(!entry.users.some(x=>x!=='T')) entry.validated=false;
+  }
+  if(entry.users.length===0){delete bookings[k];}
+  else{bookings[k]=entry;}
+  const dateStr=d+'/'+MONTHS_SHORT[m]+'/'+y;
+  addHistory(USERS[currentUser].name+' '+(mode==='add'?'afegeix':'treu')+' '+dateStr);
+  renderAll();updateCounts();updateStatus();
+  await saveDay(k,entry.users||[],entry.validated||false);
+}
+
+async function clearUser(){
+  if(!confirm('Estàs segur/a d\'esborrar el contingut de les reserves aprovades i confirmades de '+USERS[currentUser].name+'?')) return;
+  const toSave=[];
+  Object.keys(bookings).forEach(k=>{
+    bookings[k].users=bookings[k].users.filter(x=>x!==currentUser);
+    toSave.push({key:k,users:[...bookings[k].users],validated:bookings[k].validated});
+    if(bookings[k].users.length===0) delete bookings[k];
+  });
+  addHistory(USERS[currentUser].name+' ha esborrat totes les dates');
+  renderAll();updateCounts();updateStatus();
+  for(const item of toSave) await saveDay(item.key,item.users,item.validated);
+}
+
+function changeMonths(dir){
+  startMonth+=dir*6;
+  while(startMonth>11){startMonth-=12;startYear++;}
+  while(startMonth<0){startMonth+=12;startYear--;}
+  renderAll();
+}
+
+function renderCal(y,m,isFirst,isLast){
+  const first=new Date(y,m,1).getDay();
+  const offset=(first===0)?6:first-1;
+  const dim=new Date(y,m+1,0).getDate();
+  let h='<div class="calbox"><div class="calh">';
+  h+=isFirst?'<button class="calnav" onclick="changeMonths(-1)">&#8249;</button>':'<div style="width:26px"></div>';
+  h+='<div class="calmon">'+MONTHS[m]+' '+y+'</div>';
+  h+=isLast?'<button class="calnav" onclick="changeMonths(1)">&#8250;</button>':'<div style="width:26px"></div>';
+  h+='</div><div class="cgrid">';
+  ['Dl','Dm','Dc','Dj','Dv','Ds','Dg'].forEach(dw=>h+='<div class="cdow">'+dw+'</div>');
+  for(let i=0;i<offset;i++) h+='<div class="cday empty"></div>';
+  for(let d=1;d<=dim;d++){
+    const k=bKey(y,m,d);
+    const entry=bookings[k]||{users:[],validated:false};
+    const users=entry.users, validated=entry.validated;
+    const key2=mmdd(m,d);
+    const isFest=!!FESTIUS[key2], isAniv=!!ANIVS[key2];
+    const isToday=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d;
+    let tipParts=[];
+    if(isFest) tipParts.push(FESTIUS[key2]);
+    if(isAniv) tipParts.push(ANIVS[key2]);
+    const tipAttr=tipParts.length?' data-tip="'+tipParts.join('\n').replace(/"/g,'&quot;')+'"':'';
+    let cls='cday';
+    if(isFest) cls+=' festiu';
+    if(isAniv) cls+=' aniv';
+    if(users.length>0) cls+=' has-users';
+    if(isToday) cls+=' today';
+    h+='<div class="'+cls+'"'+tipAttr+' onclick="toggleDay('+y+','+m+','+d+')">';
+    h+='<div class="dnum">'+d+'</div>';
+    if(users.length>0){
+      h+='<div class="ddots">';
+      users.forEach(u=>{
+        const isPending=(u!=='T')&&!validated;
+        h+='<div class="udot'+(isPending?' pending':'')+'" style="background:'+USERS[u].color+'">'+u+'</div>';
+      });
+      h+='</div>';
+    }
+    if(isFest&&!isAniv) h+='<div class="fbar">'+FESTIUS[key2].substring(0,9)+'</div>';
+    if(isAniv&&!isFest) h+='<div class="abar">'+ANIVS[key2].replace('Aniversari ','')+'</div>';
+    if(isFest&&isAniv)  h+='<div class="fbar">fest+aniv</div>';
+    h+='</div>';
+  }
+  h+='</div></div>';
+  return h;
+}
+
+function renderAll(){
+  const grid=document.getElementById('cals-grid');
+  grid.innerHTML='';
+  for(let i=0;i<6;i++){
+    let mm=startMonth+i, yy=startYear;
+    while(mm>11){mm-=12;yy++;}
+    const div=document.createElement('div');
+    div.innerHTML=renderCal(yy,mm,i===0,i===5);
+    grid.appendChild(div.firstChild);
+  }
+  document.querySelectorAll('.cday[data-tip]').forEach(el=>{
+    el.addEventListener('mouseenter',e=>showTooltip(e,el.dataset.tip));
+    el.addEventListener('mousemove',moveTooltip);
+    el.addEventListener('mouseleave',hideTooltip);
+  });
+}
+
+setMode('add');
+renderAll();
+updateStatus();
+updateCounts();
+loadAll().then(()=>subscribeRealtime());
+</script>
+</body>
+</html>
