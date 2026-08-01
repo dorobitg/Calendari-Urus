@@ -105,6 +105,20 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1
 .dogc-note{font-size:10px;color:#9a8a72;font-style:italic;margin-top:.7rem;text-align:center}
 
 .footer{text-align:center;margin-top:2rem;font-size:11px;font-style:italic;color:#9a8a72}
+
+/* ── Slider ── */
+.slider-section{margin-top:1.4rem;border-radius:14px;overflow:hidden;position:relative}
+.slider-wrap{position:relative;width:100%;height:220px;overflow:hidden;border-radius:14px;background:#c8bca8}
+.slider-track{display:flex;height:100%;transition:transform .5s cubic-bezier(.4,0,.2,1)}
+.slide{min-width:100%;height:100%;object-fit:cover;object-position:center;flex-shrink:0;display:block}
+.slider-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(58,46,30,.55);border:none;color:#f0e8d8;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;z-index:10;transition:background .15s;backdrop-filter:blur(4px)}
+.slider-btn:hover{background:rgba(58,46,30,.8)}
+.slider-btn.prev{left:10px}
+.slider-btn.next{right:10px}
+.slider-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:10}
+.slider-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.5);cursor:pointer;transition:background .2s,transform .2s;border:none;padding:0}
+.slider-dot.active{background:#fff;transform:scale(1.2)}
+.slider-caption{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(30,20,10,.55));color:#f0e8d8;font-size:11px;font-style:italic;padding:18px 14px 10px;text-align:center;letter-spacing:.03em}
 @media(max-width:700px){
   .main-layout{flex-direction:column}
   .side-col{width:100%}
@@ -125,7 +139,27 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1
     <h1 class="atitle">Calendari Urús</h1>
   </div>
 
-  <div class="sync-bar loading" id="sync-bar">&#9679; Connectant...</div>
+
+  <!-- ── Slider fotos Urús ── -->
+  <div class="slider-section" style="margin-top:0;margin-bottom:1rem">
+    <div class="slider-wrap">
+      <div class="slider-track" id="slider-track">
+        <img class="slide" src="urusi.JPEG"                           alt="Urús">
+        <img class="slide" src="urusii.JPEG"                          alt="Urús">
+        <img class="slide" src="urusiii.JPEG"                         alt="Urús">
+        <img class="slide" src="urusiiii.JPEG"                        alt="Urús">
+        <img class="slide" src="urusiiiii.JPEG"                       alt="Urús">
+        <img class="slide" src="sant-climent-urus.png"                alt="Sant Climent d'Urús">
+        <img class="slide" src="tosa-alp-des-de-urus-cerdanya-06.jpg" alt="Tosa d'Alp des d'Urús">
+        <img class="slide" src="images.jpeg"                          alt="Urús">
+        <img class="slide" src="images-2.jpeg"                        alt="Urús">
+      </div>
+      <button class="slider-btn prev" onclick="slideMove(-1)">&#8249;</button>
+      <button class="slider-btn next" onclick="slideMove(1)">&#8250;</button>
+      <div class="slider-dots" id="slider-dots"></div>
+      <div class="slider-caption" id="slider-caption">Urús · La Cerdanya</div>
+    </div>
+  </div>
 
   <div class="legend">
     <div class="lu active" id="btn-N" onclick="selectUser('N')" style="color:#5a1aad">
@@ -230,6 +264,8 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1
     <div class="dogc-note">Per veure totes les publicacions, clica "Cercar al DOGC", escriu <strong>Urús</strong> al camp de cerca i filtra des de l'1/01/2024.</div>
   </div>
 
+
+  <!-- ── Slider fotos Urús ── -->
   <div class="footer">Desenvolupat per DOR amb l'ajut d'Anthropic</div>
 </div>
 
@@ -512,6 +548,44 @@ renderAll();
 updateStatus();
 updateCounts();
 loadAll().then(()=>subscribeRealtime());
+
+// ── Slider ────────────────────────────────────────────────────
+const SLIDES = [
+  { src:'urusi.JPEG',                           cap:'Urús · La Cerdanya' },
+  { src:'urusii.JPEG',                          cap:'Urús · La Cerdanya' },
+  { src:'urusiii.JPEG',                         cap:'Urús · La Cerdanya' },
+  { src:'urusiiii.JPEG',                        cap:'Urús · La Cerdanya' },
+  { src:'urusiiiii.JPEG',                       cap:'Urús · La Cerdanya' },
+  { src:'sant-climent-urus.png',                cap:'Sant Climent d\'Urús' },
+  { src:'tosa-alp-des-de-urus-cerdanya-06.jpg', cap:'Tosa d\'Alp des d\'Urús' },
+  { src:'images.jpeg',                          cap:'Urús · La Cerdanya' },
+  { src:'images-2.jpeg',                        cap:'Urús · La Cerdanya' }
+];
+let slideIdx = 0, slideInterval;
+
+function initSlider() {
+  const dotsEl = document.getElementById('slider-dots');
+  SLIDES.forEach((_, i) => {
+    const d = document.createElement('button');
+    d.className = 'slider-dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goToSlide(i);
+    dotsEl.appendChild(d);
+  });
+  slideInterval = setInterval(() => slideMove(1), 4000);
+}
+
+function goToSlide(n) {
+  slideIdx = (n + SLIDES.length) % SLIDES.length;
+  document.getElementById('slider-track').style.transform = 'translateX(-' + slideIdx * 100 + '%)';
+  document.getElementById('slider-caption').textContent = SLIDES[slideIdx].cap;
+  document.querySelectorAll('.slider-dot').forEach((d, i) => d.classList.toggle('active', i === slideIdx));
+  clearInterval(slideInterval);
+  slideInterval = setInterval(() => slideMove(1), 4000);
+}
+
+function slideMove(dir) { goToSlide(slideIdx + dir); }
+
+initSlider();
 </script>
 </body>
 </html>
