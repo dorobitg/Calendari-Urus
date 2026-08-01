@@ -105,6 +105,11 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1
 .dogc-note{font-size:10px;color:#9a8a72;font-style:italic;margin-top:.7rem;text-align:center}
 
 .footer{text-align:center;margin-top:2rem;font-size:11px;font-style:italic;color:#9a8a72}
+/* ── Mapa i Temps ── */
+.widgets-row{display:flex;gap:12px;margin-top:1.4rem;flex-wrap:wrap}
+.widget-box{flex:1;min-width:280px;background:#d6cab4;border:.5px solid rgba(0,0,0,.12);border-radius:14px;overflow:hidden}
+.widget-title{font-size:10px;color:#7a6a52;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:.6rem .8rem .4rem}
+.widget-box iframe{display:block;width:100%;border:none}
 
 /* ── Slider ── */
 .slider-section{margin-top:1.4rem;border-radius:14px;overflow:hidden;position:relative}
@@ -246,7 +251,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1
         <div class="dogc-entry-content">
           <div class="dogc-entry-title">Ordre EMT/262/2024 · Festes locals 2025</div>
           <div class="dogc-entry-desc">DOGC núm. 9320. Urús: <strong>16 d'agost</strong> i <strong>21 de novembre</strong> com a festes locals per a l'any 2025.</div>
-          <a class="dogc-entry-link" href="https://dogc.gencat.cat/ca/pdogc_canals_interns/pdogc_resultats_fitxa/?action=fitxa&documentId=1003483" target="_blank" rel="noopener">Veure document ↗</a>
+          <a class="dogc-entry-link" href="https://portaljuridic.gencat.cat/ca/pjur_ocults/pjur_resultats_fitxa/?action=fitxa&documentId=964033&language=ca_ES" target="_blank" rel="noopener">Veure document ↗</a>
         </div>
       </div>
       <div class="dogc-entry">
@@ -254,11 +259,28 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1
         <div class="dogc-entry-content">
           <div class="dogc-entry-title">Ordre EMT/208/2025 · Festes locals 2026</div>
           <div class="dogc-entry-desc">DOGC núm. 9565. Urús: <strong>14 d'agost</strong> i <strong>23 de novembre</strong> com a festes locals per a l'any 2026.</div>
-          <a class="dogc-entry-link" href="https://dogc.gencat.cat/ca/pdogc_canals_interns/pdogc_resultats_fitxa/?action=fitxa&documentId=1007562" target="_blank" rel="noopener">Veure document ↗</a>
+          <a class="dogc-entry-link" href="https://portaljuridic.gencat.cat/ca/pjur_ocults/pjur_resultats_fitxa/?action=fitxa&documentId=1007562&language=ca_ES" target="_blank" rel="noopener">Veure document ↗</a>
         </div>
       </div>
     </div>
     <div class="dogc-note">Per veure totes les publicacions, clica "Cercar al DOGC", escriu <strong>Urús</strong> al camp de cerca i filtra des de l'1/01/2024.</div>
+  </div>
+
+
+  <!-- ── Mapa i Temps ── -->
+  <div class="widgets-row">
+    <div class="widget-box">
+      <div class="widget-title">📍 Urús · La Cerdanya</div>
+      <iframe
+        src="https://maps.google.com/maps?q=Ur%C3%BAs,+Cerdanya,+Catalunya&t=k&z=14&ie=UTF8&iwloc=&output=embed"
+        height="220" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+    <div class="widget-box">
+      <div class="widget-title">🌤️ Temps a Urús</div>
+      <iframe
+        src="https://www.meteoblue.com/ca/temps/widget/three/?geoloc=detect&nocurrent=0&noforecast=0&days=4&tempunit=CELSIUS&windunit=KILOMETER_PER_HOUR&layout=image&location=Ur%C3%BAs"
+        height="220" frameborder="0" scrolling="NO" allowtransparency="true" sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe>
+    </div>
   </div>
 
 
