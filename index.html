@@ -139,28 +139,6 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1
     <h1 class="atitle">Calendari Urús</h1>
   </div>
 
-
-  <!-- ── Slider fotos Urús ── -->
-  <div class="slider-section" style="margin-top:0;margin-bottom:1rem">
-    <div class="slider-wrap">
-      <div class="slider-track" id="slider-track">
-        <img class="slide" src="urusi.JPEG"                           alt="Urús">
-        <img class="slide" src="urusii.JPEG"                          alt="Urús">
-        <img class="slide" src="urusiii.JPEG"                         alt="Urús">
-        <img class="slide" src="urusiiii.JPEG"                        alt="Urús">
-        <img class="slide" src="urusiiiii.JPEG"                       alt="Urús">
-        <img class="slide" src="sant-climent-urus.png"                alt="Sant Climent d'Urús">
-        <img class="slide" src="tosa-alp-des-de-urus-cerdanya-06.jpg" alt="Tosa d'Alp des d'Urús">
-        <img class="slide" src="images.jpeg"                          alt="Urús">
-        <img class="slide" src="images-2.jpeg"                        alt="Urús">
-      </div>
-      <button class="slider-btn prev" onclick="slideMove(-1)">&#8249;</button>
-      <button class="slider-btn next" onclick="slideMove(1)">&#8250;</button>
-      <div class="slider-dots" id="slider-dots"></div>
-      <div class="slider-caption" id="slider-caption">Urús · La Cerdanya</div>
-    </div>
-  </div>
-
   <div class="legend">
     <div class="lu active" id="btn-N" onclick="selectUser('N')" style="color:#5a1aad">
       <div class="ldot" style="background:#7c3aed">N</div>Noelia
@@ -173,11 +151,29 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1
     </div>
   </div>
 
+
   <div class="main-layout">
     <div class="cals-col">
       <div class="cals-grid" id="cals-grid"></div>
     </div>
     <div class="side-col">
+      <!-- Slider fotos Urús -->
+      <div style="margin-bottom:12px;border-radius:12px;overflow:hidden;position:relative;width:100%;height:180px;background:#c8bca8">
+        <div id="slider-track" style="display:flex;height:100%;transition:transform .5s cubic-bezier(.4,0,.2,1)">
+          <img style="min-width:100%;height:100%;object-fit:cover;flex-shrink:0" src="https://dorobitg.github.io/calendari-urus/urusi.JPEG" alt="Urús">
+          <img style="min-width:100%;height:100%;object-fit:cover;flex-shrink:0" src="https://dorobitg.github.io/calendari-urus/urusii.JPEG" alt="Urús">
+          <img style="min-width:100%;height:100%;object-fit:cover;flex-shrink:0" src="https://dorobitg.github.io/calendari-urus/urusiii.JPEG" alt="Urús">
+          <img style="min-width:100%;height:100%;object-fit:cover;flex-shrink:0" src="https://dorobitg.github.io/calendari-urus/urusiiii.JPEG" alt="Urús">
+          <img style="min-width:100%;height:100%;object-fit:cover;flex-shrink:0" src="https://dorobitg.github.io/calendari-urus/urusiiiii.JPEG" alt="Urús">
+          <img style="min-width:100%;height:100%;object-fit:cover;flex-shrink:0" src="https://dorobitg.github.io/calendari-urus/sant-climent-urus.png" alt="Sant Climent d'Urús">
+          <img style="min-width:100%;height:100%;object-fit:cover;flex-shrink:0" src="https://dorobitg.github.io/calendari-urus/tosa-alp-des-de-urus-cerdanya-06.jpg" alt="Tosa d'Alp">
+          <img style="min-width:100%;height:100%;object-fit:cover;flex-shrink:0" src="https://dorobitg.github.io/calendari-urus/images.jpeg" alt="Urús">
+          <img style="min-width:100%;height:100%;object-fit:cover;flex-shrink:0" src="https://dorobitg.github.io/calendari-urus/images-2.jpeg" alt="Urús">
+        </div>
+        <button onclick="slideMove(-1)" style="position:absolute;left:4px;top:50%;transform:translateY(-50%);background:rgba(58,46,30,.55);border:none;color:#f0e8d8;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">&#8249;</button>
+        <button onclick="slideMove(1)"  style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:rgba(58,46,30,.55);border:none;color:#f0e8d8;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">&#8250;</button>
+        <div id="slider-dots" style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);display:flex;gap:4px"></div>
+      </div>
       <div class="side-card">
         <div class="side-title">Mode d'edició</div>
         <div class="modebar">
@@ -220,8 +216,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1
           <li style="color:#9a8a72;font-size:10px">Sense canvis recents</li>
         </ul>
       </div>
-    </div>
-  </div>
+
 
   <!-- ── Secció DOGC ── -->
   <!-- ── Secció DOGC ── -->
