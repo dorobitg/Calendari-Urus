@@ -144,6 +144,9 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1
     <h1 class="atitle">Calendari Urús</h1>
   </div>
 
+  <div class="sync-bar loading" id="sync-bar">&#9679; Connectant...</div>
+
+
   <div class="legend">
     <div class="lu active" id="btn-N" onclick="selectUser('N')" style="color:#5a1aad">
       <div class="ldot" style="background:#7c3aed">N</div>Noelia
@@ -276,12 +279,12 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1
         height="220" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
     </div>
     <div class="widget-box">
+    <div class="widget-box">
       <div class="widget-title">🌤️ Temps a Urús</div>
-      <iframe
-        src="https://www.meteoblue.com/ca/temps/widget/three/?geoloc=detect&nocurrent=0&noforecast=0&days=4&tempunit=CELSIUS&windunit=KILOMETER_PER_HOUR&layout=image&location=Ur%C3%BAs"
-        height="220" frameborder="0" scrolling="NO" allowtransparency="true" sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe>
+      <div id="temps-widget" style="padding:1rem;min-height:180px;font-size:12px;color:#5a4a32;line-height:1.8">Carregant el temps...</div>
     </div>
   </div>
+
 
 
   <!-- ── Slider fotos Urús ── -->
@@ -378,13 +381,41 @@ function updateCounts(){
       Object.values(bookings).filter(b=>b.users.includes(u)).length;
   });
 }
-function addHistory(text){
+async function addHistory(text){
   const now=new Date();
   const ts=now.getDate()+'/'+(now.getMonth()+1)+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  // Desar a Supabase
+  try{
+    await sb.from('history').insert({text});
+  }catch(e){console.warn('Error desant historial:',e);}
+  // Actualitzar UI localment
   history.unshift({text,ts});
   if(history.length>10) history.pop();
+  renderHistory();
+}
+
+function renderHistory(){
   const ul=document.getElementById('history-list');
-  ul.innerHTML=history.map(h=>'<li><span class="htime">'+h.ts+'</span>'+h.text+'</li>').join('');
+  if(!ul) return;
+  ul.innerHTML=history.length===0
+    ?'<li style="color:#9a8a72;font-size:10px">Sense canvis recents</li>'
+    :history.map(h=>'<li><span class="htime">'+h.ts+'</span>'+h.text+'</li>').join('');
+}
+
+async function loadHistory(){
+  try{
+    const{data,error}=await sb.from('history')
+      .select('text,created_at')
+      .order('created_at',{ascending:false})
+      .limit(10);
+    if(error) throw error;
+    history=(data||[]).map(row=>{
+      const d=new Date(row.created_at);
+      const ts=d.getDate()+'/'+(d.getMonth()+1)+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+      return {text:row.text, ts};
+    });
+    renderHistory();
+  }catch(e){console.warn('Error carregant historial:',e);}
 }
 
 const tooltipEl=document.getElementById('tooltip');
@@ -567,6 +598,7 @@ renderAll();
 updateStatus();
 updateCounts();
 loadAll().then(()=>subscribeRealtime());
+loadHistory();
 
 // ── Slider ────────────────────────────────────────────────────
 const SLIDES = [
@@ -605,6 +637,53 @@ function goToSlide(n) {
 function slideMove(dir) { goToSlide(slideIdx + dir); }
 
 initSlider();
+
+// ── Widget temps via Open-Meteo (sense iframe, sense bloqueig) ──
+async function loadTemps(){
+  const el = document.getElementById('temps-widget');
+  if(!el) return;
+  try{
+    // Coordenades d'Urús: lat 42.342, lon 1.829
+    const url='https://api.open-meteo.com/v1/forecast?latitude=42.342&longitude=1.829&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe/Madrid&forecast_days=4&language=ca';
+    const res=await fetch(url);
+    const d=await res.json();
+    const icons=['☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌨️','❄️'];
+    const wIcon=wc=>{
+      if(wc===0) return '☀️';
+      if(wc<=2) return '🌤️';
+      if(wc<=3) return '⛅';
+      if(wc<=48) return '🌫️';
+      if(wc<=57) return '🌦️';
+      if(wc<=67) return '🌧️';
+      if(wc<=77) return '❄️';
+      if(wc<=82) return '🌦️';
+      return '⛈️';
+    };
+    const dies=['Avui','Demà','Dj','Dv','Ds','Dg','Dl','Dm','Dc'];
+    const now=new Date();
+    let html='<table style="width:100%;border-collapse:collapse">';
+    for(let i=0;i<4;i++){
+      const date=new Date(d.daily.time[i]);
+      const nom=i<2?dies[i]:(date.toLocaleDateString('ca-ES',{weekday:'short'}));
+      const icon=wIcon(d.daily.weathercode[i]);
+      const max=Math.round(d.daily.temperature_2m_max[i]);
+      const min=Math.round(d.daily.temperature_2m_min[i]);
+      const prec=d.daily.precipitation_sum[i]>0?'💧'+d.daily.precipitation_sum[i]+'mm':'';
+      html+=`<tr style="border-bottom:.5px solid rgba(0,0,0,.08)">
+        <td style="padding:6px 4px;font-weight:600;color:#3a2e1e">${nom}</td>
+        <td style="padding:6px 4px;font-size:18px">${icon}</td>
+        <td style="padding:6px 4px;color:#c03010;font-weight:600">${max}°</td>
+        <td style="padding:6px 4px;color:#2060a0">${min}°</td>
+        <td style="padding:6px 4px;color:#5a8a4a;font-size:10px">${prec}</td>
+      </tr>`;
+    }
+    html+='</table><div style="font-size:9px;color:#9a8a72;margin-top:6px;text-align:right">Open-Meteo · Urús 1.440m</div>';
+    el.innerHTML=html;
+  }catch(e){
+    el.innerHTML='<span style="color:#9a8a72">No s\'ha pogut carregar el temps</span>';
+  }
+}
+loadTemps();
 </script>
 </body>
 </html>
